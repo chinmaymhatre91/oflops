@@ -136,7 +136,7 @@ static void process_event(oflops_context *ctx, test_module * mod, struct pollfd 
 static void process_control_event(oflops_context *ctx, test_module * mod, struct pollfd *pfd)
 {
     char * neobuf;
-	static char * buf; 
+    static char * buf;
     static int buflen   = -1;
     static int bufstart =  0;       // begin of unprocessed data
     static int bufend   =  0;       // end of unprocessed data
@@ -176,44 +176,85 @@ static void process_control_event(oflops_context *ctx, test_module * mod, struct
             return;                 // come back later
 
         ofph = (struct ofp_header * ) &buf[bufstart];
+
+	//debug info added by Xin
+#ifdef OFLOPS_DEBUG
+	fprintf(stderr, "process_control_event() in module_run.c. packet hearder:\n");
+	fprintf(stderr, "tp=%p, version:%2x\n", &(ofph->version),ofph->version);
+	fprintf(stderr, "tp=%p, type:%2x\n", &(ofph->type), ofph->type);
+	fprintf(stderr, "length:%d\n", ntohs(ofph->length));
+	fprintf(stderr, "xid: %d\n", ofph->xid);
+	//end of debug info added by Xin
+#endif
         msglen = ntohs(ofph->length);
         if( ( msglen > count) ||    // if we don't yet have the whole msg
                     (buflen < (msglen + bufstart)))  // or our buffer is full
                 return;     // get the rest on the next pass
 
         neobuf = malloc_and_check(msglen);
-        memcpy(neobuf, &ofph, msglen);
 
-        switch(ofph->type)
-        {
-            case OFPT_PACKET_IN:
-                mod->of_event_packet_in(ctx, (struct ofp_packet_in *)neobuf);
-                break;
-            case OFPT_FLOW_EXPIRED:
-                #if OFP_VERSION == 0x97
-                    mod->of_event_flow_removed(ctx, (struct ofp_flow_expired *)neobuf);
-                #elif OFP_VERSION == 0x98
-                    mod->of_event_flow_removed(ctx, (struct ofp_flow_removed *)neobuf);
-                #else
-                    #error "Unknown version of openflow"
-                #endif
-                break;
-            case OFPT_PORT_STATUS:
-                mod->of_event_port_status(ctx, (struct ofp_port_status *)neobuf);
-                break;
-            case OFPT_ECHO_REQUEST:
-                mod->of_event_echo_request(ctx, (struct ofp_header *)neobuf);
-                break;
-            default:
-                if(ofph->type > OFPT_STATS_REPLY)   // FIXME: update for new openflow versions
-                {
-                    fprintf(stderr, "%s:%zd :: Data buffer probably trashed : unknown openflow type %d\n",
-                            __FILE__,__LINE__, ofph->type);
-                    abort();
-                }
-                mod->of_event_other(ctx, (struct ofp_header * ) neobuf);
-                break;
-        };
+        memcpy(neobuf, ofph, msglen);
+#ifdef OFLOPS_DEBUG
+	//debug info added by Xin
+	fprintf(stderr, "allocated %d bytes for neobuf\n", msglen);
+	fprintf(stderr, "after copying, the value of neobuf is:\n");
+	int i=0;
+	for(i=0;i<msglen;i++)
+	{
+		fprintf(stderr, "%x\t", neobuf[i]);
+	}
+	fprintf(stderr, "\n");
+	//end of debug info added by Xin
+#endif
+
+	//first check version added by Xin
+	if(ofph->version!=OFP_VERSION)
+	{
+	    fprintf(stderr, "Error! wrong OFP_VERSION! drop this message\n");
+	}
+	else
+	{
+		switch(ofph->type)
+		{
+		    case OFPT_HELLO:
+			//need to fill in;
+			break;
+                    case OFPT_ERROR:
+			mod->of_event_error(ctx, (struct ofp_error_msg *)neobuf);
+			break;
+		    case OFPT_PACKET_IN:
+		        mod->of_event_packet_in(ctx, (struct ofp_packet_in *)neobuf);
+		        break;
+	            case OFPT_STATS_REPLY:
+			mod->of_event_stats_reply(ctx, (struct ofp_stats_reply *)neobuf);
+			break;
+		    case OFPT_FLOW_EXPIRED:
+		        #if OFP_VERSION == 0x97
+		            mod->of_event_flow_removed(ctx, (struct ofp_flow_expired *)neobuf);
+		        #elif OFP_VERSION == 0x98
+		            mod->of_event_flow_removed(ctx, (struct ofp_flow_removed *)neobuf);
+		        #else
+		            #error "Unknown version of openflow"
+		        #endif
+		        break;
+		    case OFPT_PORT_STATUS:
+		        mod->of_event_port_status(ctx, (struct ofp_port_status *)neobuf);
+		        break;
+		    case OFPT_ECHO_REQUEST:
+		        mod->of_event_echo_request(ctx, (struct ofp_header *)neobuf);
+		        break;
+		    default:
+		        if(ofph->type > OFPT_STATS_REPLY)   // FIXME: update for new openflow versions
+		        {
+		            fprintf(stderr, "%s:%zd :: Data buffer probably trashed : unknown openflow type %d\n",
+		                    __FILE__,__LINE__, ofph->type);
+		            abort();
+		        }
+		        mod->of_event_other(ctx, (struct ofp_header * ) neobuf);
+		        break;
+		};
+	}//end else()
+
         free(neobuf);               
         bufstart += msglen;
         count = bufend - bufstart;  // repurpose count
@@ -294,6 +335,8 @@ int load_test_module(oflops_context *ctx, char * mod_filename, char * initstr)
 	symbol_fetch(get_pcap_filter);
 	symbol_fetch(handle_pcap_event);
 	symbol_fetch(of_event_packet_in);
+	symbol_fetch(of_event_error);
+	symbol_fetch(of_event_stats_reply);
 	symbol_fetch(of_event_flow_removed);
 	symbol_fetch(of_event_echo_request);
 	symbol_fetch(of_event_port_status);

@@ -97,6 +97,8 @@ typedef struct test_module
 	 * @return 0 if success or -1 on error
      */
 	int (*of_event_packet_in)(struct oflops_context *ctx, const struct ofp_packet_in * ofph);
+	int (*of_event_error)(struct oflops_context *ctx, const struct ofp_error_msg *ofph);
+	int (*of_event_stats_reply)(struct oflops_context *ctx, const struct ofp_stats_reply *ofph);
 	#if OFP_VERSION == 0x97
 		int (*of_event_flow_removed)(struct oflops_context *ctx, const struct ofp_flow_expired * ofph);
 	#elif OFP_VERSION == 0x98

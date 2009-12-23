@@ -52,7 +52,15 @@ int default_module_of_event_packet_in(struct oflops_context *ctx, const struct o
 	return 0;
 }
 
+int default_module_of_event_stats_reply(struct oflops_context *ctx, const struct ofp_stats_reply *pkt)
+{
+	return 0;
+}
 
+int default_module_of_event_error(struct oflops_context *ctx, const struct ofp_error_msg *pkterr)
+{
+	return 0;
+}
 
 #if OFP_VERSION == 0x97
 	int default_module_of_event_flow_removed(struct oflops_context *ctx, const struct ofp_flow_expired * ofph)

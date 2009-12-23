@@ -16,6 +16,8 @@ int default_module_start(struct oflops_context * ctx);
 int default_module_handle_pcap_event(struct oflops_context *ctx, struct pcap_event * pe, oflops_channel_name ch);
 
 int default_module_of_event_packet_in(struct oflops_context *ctx, const struct ofp_packet_in * pktin);
+int default_module_of_event_error(struct oflops_context *ctx, const struct ofp_error_msg *pkterr);
+int default_module_of_event_stats_reply(struct oflops_context *ctx, const struct ofp_stats_reply *pkt);
 
 #if OFP_VERSION == 0x97
 	int default_module_of_event_flow_removed(struct oflops_context *ctx, const struct ofp_flow_expired * ofph);
