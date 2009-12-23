@@ -25,6 +25,7 @@
 
 #ifndef ETHERTYPE_VLAN
 #define ETHERTYPE_VLAN 0x8100
+#endif
 
 struct ptrack_entry {
 	char * data;
