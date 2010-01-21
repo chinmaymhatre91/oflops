@@ -6,7 +6,7 @@
 #include <unistd.h>
 
 #include <arpa/inet.h>
-
+#include <netinet/tcp.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -71,6 +71,13 @@ int setup_control_channel(oflops_context *ctx)
 	flags = O_NONBLOCK;
 	if(fcntl(ctx->control_fd, F_SETFL, flags))
 		perror_and_exit("Dying on fcntl(control, O_NONBLOCK)",1);
+	//disable the Nagel algorithm on control channel
+	fprintf(stderr, "Turnning of Nagle algorithm on control channel\n");
+	if(setsockopt(ctx->control_fd, SOL_TCP, TCP_NODELAY, &one, sizeof(one)))
+	{
+		perror_and_exit("Dying on setsockopt(tcp_nodelay)", 1);
+	}
+
 	return 0;
 }
 

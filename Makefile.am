@@ -5,7 +5,7 @@ OFSRC=@openflowsrc@
 CFLAGS+=-Wall -I$(OFSRC)/include -Wshadow 
 LDFLAGS+=-L$(OFSRC)/lib 
 
-LDADD=-ldl -lpcap -loflops_test 
+LDADD=-ldl -lpcap -lpthread -loflops_test
 #LDADD+=-lefence
 
 EXTRA_DIST=./doc
